@@ -18,7 +18,7 @@ from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QGridLayout,
     QPushButton, QSizePolicy, QStatusBar, QTextBrowser,
     QTextEdit, QVBoxLayout, QWidget)
 
-# modules needed for backend
+#modules needed for backend
 import pandas as pd
 import re
 import time
