@@ -154,6 +154,15 @@ class StockScraper:
                 finalgrowthlist.append(interimgrowthlist)
         return finalgrowthlist
 
+    def movementindex(self):
+
+        dataframe_for_calculation=self.df.iloc[[-2,-1]]
+
+        print(dataframe_for_calculation)
+        print(type(dataframe_for_calculation))
+
+        print(dataframe_for_calculation[[columns for columns in dataframe_for_calculation.columns if columns != 'Dates']].iloc[1]-dataframe_for_calculation[[columns for columns in dataframe_for_calculation.columns if columns != 'Dates']].iloc[0])
+
     """def basiccandlestick(self, movementvalues, targetticker=1):
         import matplotlib.pyplot as plt
         # import numpy as np
@@ -193,3 +202,7 @@ class StockScraper:
         plt.xticks(rotation=30, ha='right')
         plt.tight_layout()
         plt.show()"""
+
+mainclass=StockScraper()
+mainclass.filedata()
+mainclass.movementindex()
