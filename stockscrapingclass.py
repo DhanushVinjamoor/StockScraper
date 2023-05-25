@@ -216,10 +216,25 @@ class StockScraper:
             dataframe_for_calculation[
                 [columns for columns in dataframe_for_calculation.columns if columns != 'Dates']].iloc[0]
 
+    def candlesticks(self,target):
+        import mplfinance as mpf
+        df_for_candlestick=self.df.loc[target]
+        df_for_candlestick=df_for_candlestick.reset_index(drop=False)
+        #df_for_candlestick=df_for_candlestick.rename(columns={"Dates":'Date'})
+        df_for_candlestick['Dates']= pd.to_datetime(df_for_candlestick['Dates'])
+        df_for_candlestick.set_index('Dates', inplace=True)
+
+        # Create the candlestick chart
+        mpf.plot(df_for_candlestick, type='candle', title='Stock Price', ylabel='Price')
+        #print(df_for_candlestick)
+
 
 mainclass = StockScraper()
-mainclass.filedata(path='scrapeddata_template_V2.csv')
-mainclass.quotegetter()
+mainclass.filedata()
+print(mainclass.df.loc['NSE: RELIANCE'])
+print(mainclass.df.loc['NSE: RELIANCE'].index)
+mainclass.candlesticks(target='NSE: RELIANCE')
+#mainclass.quotegetter()
 #mainclass.filewriter(path='scrapeddata_template_V2.csv')
 # print(mainclass.df)
 #print(mainclass.add_values_toFrame_handler(['NSE: RELIANCE', 'NSE: TATAMOTORS'], '25-5-2023', [[0, 0, 0, 2441], [0, 0, 0, 2441]]))
