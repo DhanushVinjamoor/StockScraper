@@ -26,6 +26,8 @@ class StockScraper:
         # todo move to a different method
         import pandas as pd
         df = pd.read_csv(self.filename)
+        df.dropna(how="all",inplace=True)
+        df.fillna(value=0,inplace=True)
         self.df = df
 
     # main method, to identify and get stock data
@@ -156,12 +158,14 @@ class StockScraper:
 
     def movementindex(self):
 
+        # method to generate a series with differences between the last (n) and (n-1) row for each column
+
         dataframe_for_calculation=self.df.iloc[[-2,-1]]
 
-        print(dataframe_for_calculation)
-        print(type(dataframe_for_calculation))
+        #print(dataframe_for_calculation)
+        #print(type(dataframe_for_calculation))
 
-        print(dataframe_for_calculation[[columns for columns in dataframe_for_calculation.columns if columns != 'Dates']].iloc[1]-dataframe_for_calculation[[columns for columns in dataframe_for_calculation.columns if columns != 'Dates']].iloc[0])
+        return dataframe_for_calculation[[columns for columns in dataframe_for_calculation.columns if columns != 'Dates']].iloc[1]-dataframe_for_calculation[[columns for columns in dataframe_for_calculation.columns if columns != 'Dates']].iloc[0]
 
     """def basiccandlestick(self, movementvalues, targetticker=1):
         import matplotlib.pyplot as plt
@@ -205,4 +209,7 @@ class StockScraper:
 
 mainclass=StockScraper()
 mainclass.filedata()
-mainclass.movementindex()
+#print(mainclass.df)
+#print(mainclass.df.dropna(how="all"))
+#print(mainclass.df.fillna(value=0))
+#mainclass.movementindex()
