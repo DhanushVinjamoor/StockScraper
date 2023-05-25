@@ -46,7 +46,7 @@ class StockScraper:
             self.targets = targets
         # checking for user defined targets
         else:
-            self.identifytargets()
+            self.targets=self.identifytargets()
         # in case single user defined string
         if type(self.targets) is str:
 
@@ -117,7 +117,8 @@ class StockScraper:
             if re.search(":", potent):
                 targetlist.append(potent)
 
-        self.targets = targetlist
+        #self.targets = targetlist
+        return targetlist
 
     def getgfinancequote(self, exchangename, stockname):
         import requests
@@ -226,9 +227,8 @@ class StockScraper:
 
         # Create the candlestick chart
         mpf.plot(df_for_candlestick, type='candle', title='Stock Price', ylabel='Price')
-        #print(df_for_candlestick)
 
-
+"""
 mainclass = StockScraper()
 mainclass.filedata()
 print(mainclass.df.loc['NSE: RELIANCE'])
@@ -244,4 +244,4 @@ mainclass.candlesticks(target='NSE: RELIANCE')
 # print(mainclass.df.dropna(how="all"))
 # print(mainclass.df.fillna(value=0))
 # mainclass.movementindex()
-# print(mainclass.df.transpose())
+# print(mainclass.df.transpose())"""
