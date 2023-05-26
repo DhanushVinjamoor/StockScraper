@@ -39,7 +39,7 @@ class MainWindow:
         self.Main_window = QtWidgets.QMainWindow()
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self.Main_window)
-        self.ui.submit_button.clicked.connect(lambda: self.submit_liason)
+        self.ui.submit_button.clicked.connect(lambda: self.submit_liason())
         self.ui.candlesticks_confirm.clicked.connect(lambda: self.candlestick_generator_window())
         self.ui.exchange_space.addItems(self.getexchangelist())
         self.Main_window.show()
@@ -66,9 +66,9 @@ class MainWindow:
         self.candle_selection_window.show()
 
     def submit_liason(self):
-        exchange = self.ui.exchange_space.currentText()
-        filepath = self.ui.file_space.toPlainText()
-        ticker = self.ui.ticker_space.toPlainText()
+        exchange = self.ui.exchange_space.currentText().strip()
+        filepath = self.ui.file_space.toPlainText().strip()
+        ticker = self.ui.ticker_space.toPlainText().strip()
         filecheck = self.ui.file_option.isChecked()
         filewrite = self.ui.file_write_option.isChecked()
 
@@ -77,7 +77,7 @@ class MainWindow:
         test = True
         output = ''
         if ticker == "" and (filepath == '') and not filecheck:
-            output = "Enter a ticker, or enter a file path"
+            output = output+"Enter a ticker, or enter a file path"
             test = False
 
         if not (filepath == '') and not filecheck and not filewrite:
@@ -90,25 +90,37 @@ class MainWindow:
                     import stockscrapingclass
                     self.glibrary = stockscrapingclass.StockScraper()
                     returnval = self.glibrary.quotegetter(targets=exchange + ':' + ticker)
-                    output = output + "value is " + str(returnval[1]) + " at time: " + str(returnval[0])
+                    output = output+"Please select write to file option and rerun if this data needs to be stored"+'\n'
+
+                    output=output+"value is "+str(returnval[2][0][3])+" at time: "+str(returnval[1])
                 else:
                     if filecheck:
                         import stockscrapingclass
                         self.glibrary = stockscrapingclass.StockScraper()
                         self.glibrary.filedata()
                         returnval = self.glibrary.quotegetter()
-                        # print(returnval)
-                        targets = self.glibrary.targets
-                        # sprint(targets)
-                        for count, items in enumerate(returnval):
-                            if count == 0:
-                                output = output + " Time of verifying values is " + str(items)
-                                continue
-                            output = output + " value of target " + str(targets[count - 1]) + " is " + str(items)
+
+                        output=output+"Time of getting data:"+str(returnval[1])+'\n'
+
+                        for count,targets in enumerate(returnval[0]):
+                            output=output+"value of "+str(targets)+" is "+str(returnval[2][count][3])+'\n'
+
                         if filewrite:
-                            self.glibrary.filewriter(returnval)
+                            self.glibrary.filewriter()
                     else:
-                        pass
+                        import stockscrapingclass
+                        self.glibrary = stockscrapingclass.StockScraper()
+                        self.glibrary.filedata()
+                        #print(self.glibrary.df)
+                        returnval = self.glibrary.quotegetter(targets=str(exchange + ':' + ticker))
+                        #print(returnval)
+                        #print(self.glibrary.df)
+                        #output = output + "Time of getting data:" + str(returnval[1]) + '\n'
+
+                        output = output + "value is " + str(returnval[2][0][3]) + " at time: " + str(returnval[1])
+
+                        if filewrite:
+                            self.glibrary.filewriter()
                     # todo insert function to write data to file. call the filedata function on the file, append a
                     #  column, write to csv
             else:
@@ -119,35 +131,53 @@ class MainWindow:
                 # print(filepath)
                 try:
                     # csvtest=search('.csv',filepath)==None
-                    # print('triggered')
+
                     path = filepath[::-1]
                     path = path[:3]
                     if path == "vsc":
                         csvtest = True
-                    # print(csvtest)
+
                 except:
                     output = output + 'enter a valid csv file, without any quotation marks'
-                    # self.ui.output_space.setPlainText(output)
+
                 if os.path.exists(filepath) and csvtest:
                     if filecheck:
                         import stockscrapingclass
                         self.glibrary = stockscrapingclass.StockScraper()
                         self.glibrary.filedata(path=filepath)
                         returnval = self.glibrary.quotegetter()
-                        # print(returnval)
-                        targets = self.glibrary.targets
-                        # sprint(targets)
-                        for count, items in enumerate(returnval):
-                            if count == 0:
-                                output = output + " Time of verifying values is " + str(items)
-                                continue
-                            output = output + " value of target " + str(targets[count - 1]) + " is " + str(items)
+
+                        output = output + "Time of getting data:" + str(returnval[1]) + '\n'
+
+                        for count, targets in enumerate(returnval[0]):
+                            output = output + "value of " + str(targets) + " is " + str(returnval[2][count][3]) + '\n'
+
                         if filewrite:
-                            self.glibrary.filewriter(returnval)
+                            self.glibrary.filewriter(path=filepath)
+                    else:
+                        import stockscrapingclass
+                        self.glibrary = stockscrapingclass.StockScraper()
+                        self.glibrary.filedata(path=filepath)
+
+                        returnval = self.glibrary.quotegetter(targets=str(exchange + ':' + ticker))
+
+
+                        output = output + "value is " + str(returnval[2][0][3]) + " at time: " + str(returnval[1])
+
+                        if filewrite:
+                            self.glibrary.filewriter(path=filepath)
                 else:
                     output = output + 'replace all \\(backslash) with /(forwardslash)'
 
         self.ui.output_space.setPlainText(output)
+
+
+    def open_output_dialog(self,output,values):
+        import output_dialog_ui
+        output_window=QtWidgets.QDialog()
+        output_ui=output_dialog_ui.Ui_output_dialog()
+        output_ui.setupUi(output_window)
+        output_window.show()
 
     # method to get the list of exchange names
     def getexchangelist(self):

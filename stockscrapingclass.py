@@ -60,7 +60,9 @@ class StockScraper:
 
             valuefinal.append(self.getgfinancequote(splitr[0], splitr[1]))
 
-            return valuefinal
+            self.df = self.add_values_toFrame_handler(self.targets, timestamp, valuefinal)
+
+            return [self.targets,timestamp,valuefinal]
 
         else:
             # split each item in list and get values
@@ -75,31 +77,34 @@ class StockScraper:
                 if valueinst == 'Fatal error, please verify targets assigned':
                     return valueinst + 'Error in ticker ' + str(splitr[1])
                 valuefinal.append(valueinst)
-            # if input("Do you want to plot the points? Reply yes or no(ensure lowercase): ") == "yes":
-            # self.filewriter(valuefinal)
             self.df = self.add_values_toFrame_handler(self.targets,timestamp,valuefinal)
-            return valuefinal
+            return [self.targets,timestamp,valuefinal]
 
     def add_row_single(self, target: str, date, values: list):
-        new_dict = {'Open': values[0], 'High': values[1], 'Low': values[2], 'Close': values[3]}
+        #new_dict = {'Open': values[0], 'High': values[1], 'Low': values[2], 'Close': values[3]}
         new_df_index = pd.MultiIndex.from_tuples([(target, date)], names=['Targets', 'Dates'])
-        new_df = pd.DataFrame(data=new_dict, columns=self.df.columns, index=new_df_index)
+        new_df = pd.DataFrame(data=values, columns=self.df.columns, index=new_df_index)
         # print(new_row)
+        #print(self.df)
         new_df = pd.concat([self.df, new_df])
         new_df.sort_index(inplace=True)
+        #print(new_df)
         return new_df
 
     def add_values_toFrame_handler(self, target: str | list, date, values: list):
-        if isinstance(target,str):
-            self.add_row_single(target, date, values)
+        if self.df is None:
+            return None
         else:
-            date_listing_forl2_index=[date for x in range(len(target))]
-            new_df_index=list(zip(target,date_listing_forl2_index))
-            new_df_index=pd.MultiIndex.from_tuples(new_df_index,names=['Targets', 'Dates'])
-            new_df=pd.DataFrame(values,columns=self.df.columns,index=new_df_index)
-            new_df = pd.concat([self.df, new_df])
-            new_df.sort_index(inplace=True)
-            return new_df
+            if isinstance(target,str):
+                return self.add_row_single(target, date, values)
+            else:
+                date_listing_forl2_index=[date for x in range(len(target))]
+                new_df_index=list(zip(target,date_listing_forl2_index))
+                new_df_index=pd.MultiIndex.from_tuples(new_df_index,names=['Targets', 'Dates'])
+                new_df=pd.DataFrame(values,columns=self.df.columns,index=new_df_index)
+                new_df = pd.concat([self.df, new_df])
+                new_df.sort_index(inplace=True)
+                return new_df
 
     def filewriter(self, path="scrapeddata_template.csv"):
         # Appending to file
@@ -231,10 +236,15 @@ class StockScraper:
 """
 mainclass = StockScraper()
 mainclass.filedata()
-print(mainclass.df.loc['NSE: RELIANCE'])
-print(mainclass.df.loc['NSE: RELIANCE'].index)
-mainclass.candlesticks(target='NSE: RELIANCE')
-#mainclass.quotegetter()
+if mainclass.df is None:
+    print("Non exitsant")
+else:
+    print("Exists")
+
+#print(mainclass.df.loc['NSE: RELIANCE'])
+#print(mainclass.df.loc['NSE: RELIANCE'].index)
+#mainclass.candlesticks(target='NSE: RELIANCE')
+print(mainclass.quotegetter(targets="NSE:RELIANCE"))
 #mainclass.filewriter(path='scrapeddata_template_V2.csv')
 # print(mainclass.df)
 #print(mainclass.add_values_toFrame_handler(['NSE: RELIANCE', 'NSE: TATAMOTORS'], '25-5-2023', [[0, 0, 0, 2441], [0, 0, 0, 2441]]))
