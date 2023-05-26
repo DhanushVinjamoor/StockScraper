@@ -37,10 +37,10 @@ class StockScraper:
     def quotegetter(self, targets=None):
 
         import re
-        import time
+        from datetime import datetime
         # getting timestamp and assigning it to first value
-        clocker = time.localtime()
-        timestamp = str(clocker[2]) + "-" + str(clocker[1]) + "-" + str(clocker[0])
+
+        timestamp  = datetime.now()
         valuefinal = []
         if targets is not None:
             self.targets = targets
@@ -233,20 +233,21 @@ class StockScraper:
         # Create the candlestick chart
         mpf.plot(df_for_candlestick, type='candle', title='Stock Price', ylabel='Price')
 
-"""
+
 mainclass = StockScraper()
 mainclass.filedata()
 if mainclass.df is None:
     print("Non exitsant")
 else:
     print("Exists")
-
+mainclass.quotegetter()
+mainclass.filewriter()
 #print(mainclass.df.loc['NSE: RELIANCE'])
 #print(mainclass.df.loc['NSE: RELIANCE'].index)
-#mainclass.candlesticks(target='NSE: RELIANCE')
-print(mainclass.quotegetter(targets="NSE:RELIANCE"))
-#mainclass.filewriter(path='scrapeddata_template_V2.csv')
-# print(mainclass.df)
+mainclass.candlesticks(target='NSE:RELIANCE')
+"""##print(mainclass.quotegetter(targets="NSE:RELIANCE"))
+mainclass.filewriter()
+ print(mainclass.df)
 #print(mainclass.add_values_toFrame_handler(['NSE: RELIANCE', 'NSE: TATAMOTORS'], '25-5-2023', [[0, 0, 0, 2441], [0, 0, 0, 2441]]))
 # print(mainclass.df.index)
 # mainclass.filewriter(path="scrapeddata_template_V2.csv")
