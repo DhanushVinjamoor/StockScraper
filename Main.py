@@ -21,12 +21,11 @@ from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QGridLayout,
 # modules needed for backend
 import pandas as pd
 import re
-import time
-from csv import writer
-import re
+import datetime
 import requests
 from bs4 import BeautifulSoup
 import locale
+import mplfinance
 
 
 # import sys
