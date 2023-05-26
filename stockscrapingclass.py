@@ -233,7 +233,7 @@ class StockScraper:
         # Create the candlestick chart
         mpf.plot(df_for_candlestick, type='candle', title='Stock Price', ylabel='Price')
 
-
+"""
 mainclass = StockScraper()
 mainclass.filedata()
 if mainclass.df is None:
@@ -245,7 +245,7 @@ mainclass.filewriter()
 #print(mainclass.df.loc['NSE: RELIANCE'])
 #print(mainclass.df.loc['NSE: RELIANCE'].index)
 mainclass.candlesticks(target='NSE:RELIANCE')
-"""##print(mainclass.quotegetter(targets="NSE:RELIANCE"))
+##print(mainclass.quotegetter(targets="NSE:RELIANCE"))
 mainclass.filewriter()
  print(mainclass.df)
 #print(mainclass.add_values_toFrame_handler(['NSE: RELIANCE', 'NSE: TATAMOTORS'], '25-5-2023', [[0, 0, 0, 2441], [0, 0, 0, 2441]]))
