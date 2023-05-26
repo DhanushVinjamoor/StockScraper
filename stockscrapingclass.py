@@ -40,13 +40,13 @@ class StockScraper:
         from datetime import datetime
         # getting timestamp and assigning it to first value
 
-        timestamp  = datetime.now()
+        timestamp = datetime.now()
         valuefinal = []
         if targets is not None:
             self.targets = targets
         # checking for user defined targets
         else:
-            self.targets=self.identifytargets()
+            self.targets = self.identifytargets()
         # in case single user defined string
         if type(self.targets) is str:
 
@@ -62,7 +62,7 @@ class StockScraper:
 
             self.df = self.add_values_toFrame_handler(self.targets, timestamp, valuefinal)
 
-            return [self.targets,timestamp,valuefinal]
+            return [self.targets, timestamp, valuefinal]
 
         else:
             # split each item in list and get values
@@ -77,33 +77,38 @@ class StockScraper:
                 if valueinst == 'Fatal error, please verify targets assigned':
                     return valueinst + 'Error in ticker ' + str(splitr[1])
                 valuefinal.append(valueinst)
-            self.df = self.add_values_toFrame_handler(self.targets,timestamp,valuefinal)
-            return [self.targets,timestamp,valuefinal]
+            self.df = self.add_values_toFrame_handler(self.targets, timestamp, valuefinal)
+            return [self.targets, timestamp, valuefinal]
 
     def add_row_single(self, target: str, date, values: list):
-        #new_dict = {'Open': values[0], 'High': values[1], 'Low': values[2], 'Close': values[3]}
+        # new_dict = {'Open': values[0], 'High': values[1], 'Low': values[2], 'Close': values[3]}
         new_df_index = pd.MultiIndex.from_tuples([(target, date)], names=['Targets', 'Dates'])
         new_df = pd.DataFrame(data=values, columns=self.df.columns, index=new_df_index)
         # print(new_row)
-        #print(self.df)
+        # print(self.df)
         new_df = pd.concat([self.df, new_df])
         new_df.sort_index(inplace=True)
-        #print(new_df)
+        # print(new_df)
         return new_df
 
     def add_values_toFrame_handler(self, target: str | list, date, values: list):
         if self.df is None:
             return None
         else:
-            if isinstance(target,str):
+            if isinstance(target, str):
                 return self.add_row_single(target, date, values)
             else:
-                date_listing_forl2_index=[date for x in range(len(target))]
-                new_df_index=list(zip(target,date_listing_forl2_index))
-                new_df_index=pd.MultiIndex.from_tuples(new_df_index,names=['Targets', 'Dates'])
-                new_df=pd.DataFrame(values,columns=self.df.columns,index=new_df_index)
+                date_listing_forl2_index = [date for x in range(len(target))]
+                new_df_index = list(zip(target, date_listing_forl2_index))
+                new_df_index = pd.MultiIndex.from_tuples(new_df_index, names=['Targets', 'Dates'])
+                new_df = pd.DataFrame(values, columns=self.df.columns, index=new_df_index)
                 new_df = pd.concat([self.df, new_df])
+                new_df.index.set_levels(
+                    pd.to_datetime(new_df.index.get_level_values('Dates'), format='%Y-%m-%d %H:%M:%S.%f'),
+                    level='Dates', inplace=True, verify_integrity=False)
+                new_df = new_df.sort_index(level='Dates', sort_remaining=False)
                 new_df.sort_index(inplace=True)
+
                 return new_df
 
     def filewriter(self, path="scrapeddata_template.csv"):
@@ -122,7 +127,7 @@ class StockScraper:
             if re.search(":", potent):
                 targetlist.append(potent)
 
-        #self.targets = targetlist
+        # self.targets = targetlist
         return targetlist
 
     def getgfinancequote(self, exchangename, stockname):
@@ -143,7 +148,7 @@ class StockScraper:
         targetvalue_closing = googlesoup.find('div', attrs={'class': 'YMlKec fxKbKc'}).text
 
         # get the numbers and convert to number value
-        targetvalue_closing=self.convert_gfinance_text_to_num(targetvalue_closing)
+        targetvalue_closing = self.convert_gfinance_text_to_num(targetvalue_closing)
 
         # the gfinance website has a section where the opening, high, low values are placed. These values are stored
         # in divs with class names the same. So all of these are extracted with the fina all method, and the first
@@ -168,15 +173,13 @@ class StockScraper:
                 targetvalue_high = self.convert_gfinance_text_to_num(high_low_values_raw[1].strip())
                 break
 
-        return [targetvalue_opening,targetvalue_high,targetvalue_low,targetvalue_closing]
+        return [targetvalue_opening, targetvalue_high, targetvalue_low, targetvalue_closing]
 
-
-
-    def convert_gfinance_text_to_num(self,targetvalues):
+    def convert_gfinance_text_to_num(self, targetvalues):
         import re
 
         # goldspot has been kept as 3, based on prior experience
-        goldspot=3
+        goldspot = 3
 
         # since text scraped from Google finance is not directly able to be converted to int with int(),
         # this function splits the number into each character, and tries to convert it into int. if it works,
@@ -214,45 +217,18 @@ class StockScraper:
 
         dataframe_for_calculation = self.df.iloc[[-2, -1]]
 
-        # print(dataframe_for_calculation)
-        # print(type(dataframe_for_calculation))
-
         return dataframe_for_calculation[
             [columns for columns in dataframe_for_calculation.columns if columns != 'Dates']].iloc[1] - \
             dataframe_for_calculation[
                 [columns for columns in dataframe_for_calculation.columns if columns != 'Dates']].iloc[0]
 
-    def candlesticks(self,target):
+    def candlesticks(self, target):
         import mplfinance as mpf
-        df_for_candlestick=self.df.loc[target]
-        df_for_candlestick=df_for_candlestick.reset_index(drop=False)
-        #df_for_candlestick=df_for_candlestick.rename(columns={"Dates":'Date'})
-        df_for_candlestick['Dates']= pd.to_datetime(df_for_candlestick['Dates'])
+        df_for_candlestick = self.df.loc[target]
+        df_for_candlestick = df_for_candlestick.reset_index(drop=False)
+        # df_for_candlestick=df_for_candlestick.rename(columns={"Dates":'Date'}
+        df_for_candlestick['Dates'] = pd.to_datetime(df_for_candlestick['Dates'])
         df_for_candlestick.set_index('Dates', inplace=True)
 
         # Create the candlestick chart
         mpf.plot(df_for_candlestick, type='candle', title='Stock Price', ylabel='Price')
-
-"""
-mainclass = StockScraper()
-mainclass.filedata()
-if mainclass.df is None:
-    print("Non exitsant")
-else:
-    print("Exists")
-mainclass.quotegetter()
-mainclass.filewriter()
-#print(mainclass.df.loc['NSE: RELIANCE'])
-#print(mainclass.df.loc['NSE: RELIANCE'].index)
-mainclass.candlesticks(target='NSE:RELIANCE')
-##print(mainclass.quotegetter(targets="NSE:RELIANCE"))
-mainclass.filewriter()
- print(mainclass.df)
-#print(mainclass.add_values_toFrame_handler(['NSE: RELIANCE', 'NSE: TATAMOTORS'], '25-5-2023', [[0, 0, 0, 2441], [0, 0, 0, 2441]]))
-# print(mainclass.df.index)
-# mainclass.filewriter(path="scrapeddata_template_V2.csv")
-# print(mainclass.df)
-# print(mainclass.df.dropna(how="all"))
-# print(mainclass.df.fillna(value=0))
-# mainclass.movementindex()
-# print(mainclass.df.transpose())"""
