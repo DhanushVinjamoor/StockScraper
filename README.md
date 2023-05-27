@@ -15,9 +15,8 @@ Options available:
 
 3. If you wish to write the results to the file, select the write to file option.
 
-The program needs python with the following modules installed to run - PySide6,pandas,re,time,csv,requests,BeautifulSoup,locale
-
-Alternatively, you can run the .exe file to set up a temporary virtual environment with all the required add-ins
+Required Modules:
+sys,PySide6,pandas,re,datetime,requests,bs4,locale,mplfinance
 
 
 

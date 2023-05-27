@@ -180,7 +180,7 @@ class MainWindow:
 
     # method to get the list of exchange names
     def getexchangelist(self):
-        import pandas as pd
+        #import pandas as pd
         exchangedf = pd.read_csv("Exchangelisting.csv")
         exchangelist = exchangedf['Exchange_Code'].tolist()
         return exchangelist
