@@ -31,6 +31,18 @@ class StockScraper:
         df = pd.read_csv(self.filename, index_col=[0, 1])
         df.dropna(how="all", inplace=True)
         df.fillna(value=0, inplace=True)
+
+        # set the datetime index to pandas datetime and localise to Indian timezone
+
+        from pytz import timezone
+
+        indian_tz = timezone('Asia/Kolkata')
+        #df.index.tz_localize(indian_tz)
+
+        df.index.set_levels(
+            pd.to_datetime(df.index.get_level_values('Dates'), format='%Y-%m-%d %H:%M:%S.%f').tz_localize(indian_tz),
+            level='Dates', inplace=True, verify_integrity=False)
+
         self.df = df
 
     # main method, to identify and get stock data
@@ -38,9 +50,11 @@ class StockScraper:
 
         import re
         from datetime import datetime
-        # getting timestamp and assigning it to first value
 
-        timestamp = datetime.now()
+        # getting timestamp and assigning it to first value
+        import pytz
+        indian_tz = pytz.timezone('Asia/Kolkata')
+        timestamp = indian_tz.localize(datetime.now())
         valuefinal = []
         if targets is not None:
             self.targets = targets
@@ -102,11 +116,18 @@ class StockScraper:
                 new_df_index = list(zip(target, date_listing_forl2_index))
                 new_df_index = pd.MultiIndex.from_tuples(new_df_index, names=['Targets', 'Dates'])
                 new_df = pd.DataFrame(values, columns=self.df.columns, index=new_df_index)
-                new_df = pd.concat([self.df, new_df])
+                new_df = pd.concat([self.df, new_df],ignore_index=False)
+                """
+                from pytz import timezone
+
+                indian_tz = timezone('Asia/Kolkata')
+
                 new_df.index.set_levels(
-                    pd.to_datetime(new_df.index.get_level_values('Dates'), format='%Y-%m-%d %H:%M:%S.%f'),
-                    level='Dates', inplace=True, verify_integrity=False)
+                    pd.to_datetime(new_df.index.get_level_values('Dates'), format='%Y-%m-%d %H:%M:%S.%f').tz_localize(indian_tz),
+                    level='Dates', inplace=True, verify_integrity=False)"""
+
                 new_df = new_df.sort_index(level='Dates', sort_remaining=False)
+
                 new_df.sort_index(inplace=True)
 
                 return new_df
@@ -232,3 +253,8 @@ class StockScraper:
 
         # Create the candlestick chart
         mpf.plot(df_for_candlestick, type='candle', title='Stock Price', ylabel='Price')
+
+handler=StockScraper()
+handler.filedata()
+handler.quotegetter()
+handler.filewriter()
