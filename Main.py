@@ -26,6 +26,7 @@ import requests
 from bs4 import BeautifulSoup
 import locale
 import mplfinance
+import pytz
 
 
 # import sys

@@ -29,19 +29,29 @@ class StockScraper:
 
         import pandas as pd
         df = pd.read_csv(self.filename, index_col=[0, 1])
+
+        # if there are any empty rows, drop them, and fill in incomplete rows with 0
+
         df.dropna(how="all", inplace=True)
         df.fillna(value=0, inplace=True)
 
-        # set the datetime index to pandas datetime and localise to Indian timezone
+        # set the datetime index to pandas datetime and localise to Indian timezone .Initially, a normal pandas
+        # datetime value was utilized. However, this caused issues when reading the df and adding new rows to the df.
+        # As a countermeasure, all values read from and written to the csv are first passed through timezone
+        # localisations
 
         from pytz import timezone
 
         indian_tz = timezone('Asia/Kolkata')
-        #df.index.tz_localize(indian_tz)
-
-        df.index.set_levels(
-            pd.to_datetime(df.index.get_level_values('Dates'), format='%Y-%m-%d %H:%M:%S.%f').tz_localize(indian_tz),
-            level='Dates', inplace=True, verify_integrity=False)
+        try:
+            df.index.set_levels(
+                pd.to_datetime(df.index.get_level_values('Dates'), format='%Y-%m-%d %H:%M:%S.%f').tz_localize(indian_tz),
+                level='Dates', inplace=True, verify_integrity=False)
+        except TypeError:
+            df.index.set_levels(
+                pd.to_datetime(df.index.get_level_values('Dates'), format='%Y-%m-%d %H:%M:%S.%f').tz_convert(
+                    indian_tz),
+                level='Dates', inplace=True, verify_integrity=False)
 
         self.df = df
 
@@ -51,17 +61,31 @@ class StockScraper:
         import re
         from datetime import datetime
 
-        # getting timestamp and assigning it to first value
+        # getting timestamp, utilised when returning final value
+
         import pytz
         indian_tz = pytz.timezone('Asia/Kolkata')
         timestamp = indian_tz.localize(datetime.now())
+
+        # initialise the list that holds the values that are scraped. A nested list is needed, as a multi level index
+        # dataframe is utilised, and each row to be written to the df needs to be a list, which in turn is nested in
+        # list.
+
         valuefinal = []
+
+        # if targets are provided as an argument, the argument is set as the target. If no arguments are provided,
+        # the identify targets method will use the level 0 index values as the targets
+
         if targets is not None:
             self.targets = targets
         # checking for user defined targets
         else:
             self.targets = self.identifytargets()
         # in case single user defined string
+
+        # the string cleaning is necessary as a failsafe when attempting to establish a connection, as unnecessary
+        # whitespace may cause a bad url
+
         if type(self.targets) is str:
 
             splitr = re.split(":", self.targets)
@@ -71,8 +95,13 @@ class StockScraper:
                 splitr[s] = splitr[s].strip()
 
             # try to connect and get the values
+            # the gfinance method returns a list of values in the format - open,high,low,close
 
             valuefinal.append(self.getgfinancequote(splitr[0], splitr[1]))
+
+            # error handling
+            if valuefinal[0] == 'Fatal error, please verify targets assigned':
+                return valuefinal[0] + 'Error in ticker ' + str(self.targets)
 
             self.df = self.add_values_toFrame_handler(self.targets, timestamp, valuefinal)
 
@@ -87,22 +116,38 @@ class StockScraper:
                 for s in range(0, len(splitr)):
                     splitr[s] = splitr[s].strip()
                     # print(splitr[s])
+
+                # refer above for explanation
+
                 valueinst = self.getgfinancequote(splitr[0], splitr[1])
+
+                # error handling
                 if valueinst == 'Fatal error, please verify targets assigned':
-                    return valueinst + 'Error in ticker ' + str(splitr[1])
+                    return valueinst + 'Error in ticker ' + str(i)
+
                 valuefinal.append(valueinst)
+
+            # use the method to update the df for the values scraped in this instance of the function
+
             self.df = self.add_values_toFrame_handler(self.targets, timestamp, valuefinal)
+
             return [self.targets, timestamp, valuefinal]
 
     def add_row_single(self, target: str, date, values: list):
-        # new_dict = {'Open': values[0], 'High': values[1], 'Low': values[2], 'Close': values[3]}
+
+        # prepare a new dataframe for the values to be added, with a multilevel index, and add it to the existing
+        # dataframe using concat
         new_df_index = pd.MultiIndex.from_tuples([(target, date)], names=['Targets', 'Dates'])
         new_df = pd.DataFrame(data=values, columns=self.df.columns, index=new_df_index)
-        # print(new_row)
-        # print(self.df)
         new_df = pd.concat([self.df, new_df])
+
+        # since concat adds the new index at the bottom, the df is sorted first based on dates then based on
+        # the ticker names
+
+        new_df = new_df.sort_index(level='Dates', sort_remaining=False)
+
         new_df.sort_index(inplace=True)
-        # print(new_df)
+
         return new_df
 
     def add_values_toFrame_handler(self, target: str | list, date, values: list):
@@ -112,19 +157,18 @@ class StockScraper:
             if isinstance(target, str):
                 return self.add_row_single(target, date, values)
             else:
+                # since only one date value will be provided by the quotegetter method, the a list comprehension and
+                # zip call is used to prepare a list to be used for creating a multiindex dataframe that for the new
+                # rows
+
                 date_listing_forl2_index = [date for x in range(len(target))]
                 new_df_index = list(zip(target, date_listing_forl2_index))
                 new_df_index = pd.MultiIndex.from_tuples(new_df_index, names=['Targets', 'Dates'])
                 new_df = pd.DataFrame(values, columns=self.df.columns, index=new_df_index)
-                new_df = pd.concat([self.df, new_df],ignore_index=False)
-                """
-                from pytz import timezone
+                new_df = pd.concat([self.df, new_df], ignore_index=False)
 
-                indian_tz = timezone('Asia/Kolkata')
-
-                new_df.index.set_levels(
-                    pd.to_datetime(new_df.index.get_level_values('Dates'), format='%Y-%m-%d %H:%M:%S.%f').tz_localize(indian_tz),
-                    level='Dates', inplace=True, verify_integrity=False)"""
+                # since concat adds the new index at the bottom, the df is sorted first based on dates then based on
+                # the ticker names
 
                 new_df = new_df.sort_index(level='Dates', sort_remaining=False)
 
@@ -133,7 +177,7 @@ class StockScraper:
                 return new_df
 
     def filewriter(self, path="scrapeddata_template.csv"):
-        # Appending to file
+        # write the df to the file
         self.df.to_csv(path)
 
     # methods called by main methods, do not modify unless you know what you are doing
@@ -247,14 +291,20 @@ class StockScraper:
         import mplfinance as mpf
         df_for_candlestick = self.df.loc[target]
         df_for_candlestick = df_for_candlestick.reset_index(drop=False)
-        # df_for_candlestick=df_for_candlestick.rename(columns={"Dates":'Date'}
+
         df_for_candlestick['Dates'] = pd.to_datetime(df_for_candlestick['Dates'])
         df_for_candlestick.set_index('Dates', inplace=True)
 
         # Create the candlestick chart
         mpf.plot(df_for_candlestick, type='candle', title='Stock Price', ylabel='Price')
 
-handler=StockScraper()
+"""
+import time
+start_time = time.perf_counter()
+handler = StockScraper()
 handler.filedata()
 handler.quotegetter()
 handler.filewriter()
+end_time = time.perf_counter()
+print(end_time - start_time, "seconds")
+"""
